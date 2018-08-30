@@ -1,0 +1,89 @@
+## from http://www/wvgazzettemail.com/
+
+data <- readLines("https://www.r-bloggers.com/wp-content/uploads/2016/01/vent.txt")
+
+df <- data.frame(data)
+View(data)
+
+
+textdata <- df[df$data, ]
+View(textdata)
+
+##removing punctuations not needed with the gsub function##
+textdata1 = gsub("[[:punct:]]", "", textdata)
+View(textdata1)
+
+
+##removing unneccessary digits##
+textdata2 = gsub("[[:digit:]]", "", textdata1)
+View(textdata2)
+
+
+##removing the links in it ##
+textdata3 =  gsub("http//wt", "", textdata2)
+View(textdata3)
+
+## precaution measures against digit and letters that are seeable by the naked eye##
+textdata4 = gsub("[ \t]{2,}", "", textdata3)
+View(textdata4)
+
+
+##removing aplha numeric characters##
+textdata5 = gsub("^\\s+|\\s+$", "", textdata4)
+
+
+
+View(textdata5)
+
+## this function is to turn everything to lower case#3
+try.error = function(x)
+{
+  y = NA
+  try_error = tryCatch(tolower(x), error = 
+                         function(e) e)
+  if (! inherits(try_error, "error"))
+    y = tolower(x)
+  return(y)
+}
+
+textdata6 = sapply(textdata5,try.error)
+View(textdata6)
+
+
+## we want to check for the not available values##
+textdata7 = textdata6[!is.na(textdata6)]
+View(textdata7)
+
+## we made R not see places where there are spaces as varaiables
+names(textdata7) = NULL
+
+
+## to get the sentiments, load the library syuzhet##
+library(syuzhet)
+
+
+##getting sentiment analysis##
+mysentiment <- get_nrc_sentiment(textdata7)
+SentimentScores<-data.frame(colSums(mysentiment[,]))
+names(SentimentScores) <- "Score"
+SentimentScores <- cbind("sentiment" = row.names(SentimentScores), SentimentScores)
+rownames(SentimentScores) <- NULL
+View(SentimentScores)
+
+##sentiment analysis plot##
+library(ggplot2)
+ggplot (data = SentimentScores, aes(x = sentiment, y = Score)) + geom_bar(aes(fill = sentiment), stat = "identity") + theme(legend.position = "none") + xlab("Sentiment") + ylab("Score") + ggtitle("Textmine")
+
+
+
+##word cloud loading##
+library(SnowballC)
+library(dplyr)
+library(plyr)
+library(wordcloud)
+library(RColorBrewer)
+library(tm)
+library(NLP)
+library(rlang)
+wordcloud (words = textdata7, scale = c(.2, .5), min.freq = .000007, max.words=500000, random.order=TRUE, rot.per=0.3 ,colors=brewer.pal(8, "Dark2"), use.r.layout = FALSE, fixed.asp = TRUE)
+
